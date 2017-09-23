@@ -1,4 +1,4 @@
-""" Snake
+''' Snake
 
 A Python3 implementation of Snake Byte
 
@@ -8,7 +8,7 @@ Apples appear on the screen at random locations
 The snake eats an apple, and gets longer
 If the snake hits a wall, or it's own body, the game is over
 
-"""
+'''
 
 # IMPORTS
 import random
@@ -41,9 +41,6 @@ snakeList = []                   # Where is the snake located
 appleList = []                   # Where are all the apples
 snakeDirection = DOWN            # Initial snake direction
 score = 0                        # What's the current score?
-
-# Init PyGame
-#pygame.init()
 
 # FUNCTIONS
 def getRandomPoint(x, y):
@@ -271,11 +268,13 @@ def drawScreen():
     drawApples()
     drawSnake()
 
-
-# Main Flow
+'''
+  Main program flow
+''' 
 
 # Init PyGame
 pygame.init()
+
 # Init the sound module as well
 pygame.mixer.init()
 
@@ -285,8 +284,9 @@ pygame.display.set_caption("Snake Byte!")
 
 window.fill(BGCOLOR)
 
-# Setup some sounds
-snakeMoveSound = pygame.mixer.Sound("snakemovesound.wav")
+# Setup sounds 
+snakeMoveSound = pygame.mixer.Sound("sounds/SnakeMovement.wav")
+#appleHitSound = pygame.mixer.Sound("sounds/AppleHit.wav")
 
 # Init basic game parameters
 appleList += initApples(INITAPPLES)
@@ -307,8 +307,11 @@ paused = False
 expandSnake = 0
 clock = pygame.time.Clock()
 
-while running:
+# Start the sounds on infinite loop
+snakeMoveSound.play(loops=-1)
 
+while running:
+    
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -329,4 +332,5 @@ while running:
     pygame.display.flip()
     clock.tick(speed)
 
+snakeMoveSound.stop()
 print("Points: {}".format(points))
