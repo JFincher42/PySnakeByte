@@ -43,7 +43,7 @@ snakeDirection = DOWN            # Initial snake direction
 score = 0                        # What's the current score?
 
 # Init PyGame
-pygame.init()
+#pygame.init()
 
 # FUNCTIONS
 def getRandomPoint(x, y):
@@ -273,12 +273,20 @@ def drawScreen():
 
 
 # Main Flow
-# Setup PyGame board
+
+# Init PyGame
 pygame.init()
+# Init the sound module as well
+pygame.mixer.init()
+
+# Setup PyGame board
 window = pygame.display.set_mode(((SCREENX*SIZE), (SCREENY*SIZE)))
 pygame.display.set_caption("Snake Byte!")
 
 window.fill(BGCOLOR)
+
+# Setup some sounds
+snakeMoveSound = pygame.mixer.Sound("snakemovesound.wav")
 
 # Init basic game parameters
 appleList += initApples(INITAPPLES)
