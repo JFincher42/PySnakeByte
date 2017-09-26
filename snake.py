@@ -224,6 +224,10 @@ def checkSnakeHit():
 
     # First check for an apple hit
     if snakeHead in appleList:
+        # Play the sound
+        appleHitSound.play()
+         
+        # Remove the apple we just hit, and add the points
         appleList.remove(snakeHead)
         points += APPLEPOINTS
 
@@ -241,16 +245,32 @@ def checkSnakeHit():
     # Now check if we hit our own body
     # We need to ignore the actual head, so look from the 2nd element on
     if snakeHead in snakeList[1:]:
+        # Stop the game loop 
         running = False
+        
+        # Turn off the background sound, and play the crash sound
+        backgroundSound.stop()
+        snakeCrashedSound.play()
         print("Ouroboros not permitted!")
+        
+        # Wait long enough for the sound to play, plus a little
+        pygame.time.wait(int(snakeCrashedSound.get_length()*1000)+500)
 
     # Now check for a wall hit
     if snakeHead[0] <= 0 or \
        snakeHead[0] >= SCREENX or \
        snakeHead[1] <= 0 or \
        snakeHead[1] >= SCREENY:
+        # Stop the game loop 
         running = False
+        
+        # Turn off the background sound, and play the crash sound
+        backgroundSound.stop()
+        snakeCrashedSound.play()
         print("Off screen!")
+        
+        # Wait long enough for the sound to play, plus a little
+        pygame.time.wait(int(snakeCrashedSound.get_length()*1000)+500)
 
 
 def drawScreen():
@@ -285,8 +305,11 @@ pygame.display.set_caption("Snake Byte!")
 window.fill(BGCOLOR)
 
 # Setup sounds 
-snakeMoveSound = pygame.mixer.Sound("sounds/SnakeMovement.wav")
-#appleHitSound = pygame.mixer.Sound("sounds/AppleHit.wav")
+# snakeMoveSound = pygame.mixer.Sound("sounds/SnakeMovement.wav")
+backgroundSound = pygame.mixer.Sound("sounds/BackgroundMusic.wav")
+appleHitSound = pygame.mixer.Sound("sounds/AppleHit.wav")
+gameOverSound = pygame.mixer.Sound("sounds/GameOver.wav")
+snakeCrashedSound = pygame.mixer.Sound("sounds/MissionFailed.wav")
 
 # Init basic game parameters
 appleList += initApples(INITAPPLES)
@@ -307,8 +330,8 @@ paused = False
 expandSnake = 0
 clock = pygame.time.Clock()
 
-# Start the sounds on infinite loop
-snakeMoveSound.play(loops=-1)
+# Start the background sound on infinite loop
+backgroundSound.play(loops=-1)
 
 while running:
     
@@ -327,10 +350,15 @@ while running:
         # Check if the snake hit something
         checkSnakeHit()
 
-    # Refresh the screen
-    drawScreen()
-    pygame.display.flip()
-    clock.tick(speed)
+    # Refresh the screen, but only if we're still running
+    # This prevents a small visual bug when the game is over
+    if running:
+        drawScreen()
+        pygame.display.flip()
+        clock.tick(speed)
 
-snakeMoveSound.stop()
+# Stop the background sound, if it's not already stopped, and play the game over sound
+backgroundSound.stop()
+gameOverSound.play()
+pygame.time.wait(int(gameOverSound.get_length()*1000)+500)
 print("Points: {}".format(points))
