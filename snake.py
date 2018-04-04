@@ -43,7 +43,7 @@ snakeDirection = DOWN            # Initial snake direction
 score = 0                        # What's the current score?
 
 # Init PyGame
-pygame.init()
+#pygame.init()
 
 # FUNCTIONS
 def getRandomPoint(x, y):
@@ -87,7 +87,7 @@ def drawApples():
         appleRect = pygame.Rect(((apple[0]-1)*SIZE+1),
                                 ((apple[1]-1)*SIZE+1),
                                 SIZE-2, SIZE-2)
-        pygame.draw.rect(window, APPLECOLOR, appleRect)
+        pygame.draw.ellipse(window, APPLECOLOR, appleRect)
 
 
 def drawSnake():
@@ -105,7 +105,7 @@ def drawSnake():
     snakeRect = pygame.Rect(((snakeHead[0]-1)*SIZE+1),
                             ((snakeHead[1]-1)*SIZE+1),
                             SIZE-2, SIZE-2)
-    pygame.draw.rect(window, SNAKEHEADCOLOR, snakeRect)
+    pygame.draw.ellipse(window, SNAKEHEADCOLOR, snakeRect)
 
     # Now, draw the body of the snake
     for snake in snakeList[1:SNAKEFADE]:
