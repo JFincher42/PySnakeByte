@@ -162,33 +162,33 @@ def processInput(key, direction):
     newDirection = direction
     # Our cardinal directions use I, J, K, and L
     # We also restrict you from moving straight backwards
-    if key == pygame.K_l:
+    if key == pygame.K_l:                                           # pylint: disable=E1101
         if direction == UP or direction == DOWN:
             newDirection = RIGHT
-    elif key == pygame.K_j:
+    elif key == pygame.K_j:                                         # pylint: disable=E1101
         if direction == UP or direction == DOWN:
             newDirection = LEFT
-    elif key == pygame.K_i:
+    elif key == pygame.K_i:                                         # pylint: disable=E1101
         if direction == RIGHT or direction == LEFT:
             newDirection = UP
-    elif key == pygame.K_k:
+    elif key == pygame.K_k:                                         # pylint: disable=E1101
         if direction == RIGHT or direction == LEFT:
             newDirection = DOWN
 
     # You can also move relative to the direction, left or right
     # Using the arrows or the period and comma
-    elif key == pygame.K_RIGHT or key == pygame.K_PERIOD:
+    elif key == pygame.K_RIGHT or key == pygame.K_PERIOD:           # pylint: disable=E1101
         newDirection = clockwise(direction)
-    elif key == pygame.K_LEFT or key == pygame.K_COMMA:
+    elif key == pygame.K_LEFT or key == pygame.K_COMMA:             # pylint: disable=E1101
         newDirection = counterclockwise(direction)
 
     # If the user presses Q, quit the game
-    elif key == pygame.K_q:
+    elif key == pygame.K_q:                                         # pylint: disable=E1101
         running = False
 
     # If the user presses P, pause the game
-    elif key == pygame.K_p:
-        paused = not paused
+    elif key == pygame.K_p:                                         # pylint: disable=E1101
+        paused = not paused                                         # pylint: disable=E0601
     
     return newDirection
 
@@ -228,7 +228,7 @@ def checkSnakeHit():
     # First check for an apple hit
     if snakeHead in appleList:
         appleList.remove(snakeHead)
-        points += APPLEPOINTS
+        points += APPLEPOINTS                   # pylint: disable=E0602
 
         # Add a new apple to the screen, and make it visible
         # Make sure it's not under another item
@@ -274,7 +274,7 @@ def drawScreen():
 
 # Main Flow
 # Setup PyGame board
-pygame.init()
+pygame.init()                       # pylint: disable=E1101
 window = pygame.display.set_mode(((SCREENX*SIZE), (SCREENY*SIZE)))
 pygame.display.set_caption("Snake Byte!")
 
@@ -302,9 +302,9 @@ clock = pygame.time.Clock()
 while running:
 
     for event in pygame.event.get():
-        if event.type == pygame.QUIT:
+        if event.type == pygame.QUIT:           # pylint: disable=E1101
             running = False
-        elif event.type == pygame.KEYDOWN:
+        elif event.type == pygame.KEYDOWN:      # pylint: disable=E1101
             snakeDirection = processInput(event.key, snakeDirection)
 
     if not paused:
