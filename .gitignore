@@ -105,4 +105,4 @@ ENV/
 .pydevproject
 
 # VS Code settings
-.vscode/*
+.vscode/settings.json
