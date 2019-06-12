@@ -9,17 +9,21 @@ class ArcadeTest(arcade.Window):
 
     def on_draw(self):
         arcade.start_render()
-        if self.center_x < 5 or self.center_x > 795:
-            self.speed_x = -self.speed_x
-        if self.center_y < 5 or self.center_y > 695:
-            self.speed_y = -self.speed_y
 
         arcade.draw_circle_filled(
             self.center_x, self.center_y, 10, arcade.color.WHEAT
         )
 
+
+
+    def update(self, delta):
         self.center_x += self.speed_x
         self.center_y += self.speed_y
+
+        if self.center_x < 5 or self.center_x > 795:
+            self.speed_x = -self.speed_x
+        if self.center_y < 5 or self.center_y > 695:
+            self.speed_y = -self.speed_y
 
 
 if __name__ == "__main__":
