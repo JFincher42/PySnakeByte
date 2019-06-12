@@ -1,30 +1,36 @@
 import arcade
 
 
-def on_draw(delta):
-    arcade.start_render()
-    if on_draw.center_x < 5 or on_draw.center_x > 795:
-        on_draw.speed_x = -on_draw.speed_x
-    if on_draw.center_y < 5 or on_draw.center_y > 695:
-        on_draw.speed_y = -on_draw.speed_y
+class ArcadeTest(arcade.Window):
 
-    arcade.draw_circle_filled(
-        on_draw.center_x, on_draw.center_y, 10, arcade.color.WHEAT
-    )
+    def __init__(self, width, height, title):
+        super().__init__(width, height, title)
+        arcade.set_background_color(arcade.color.BLACK_LEATHER_JACKET)
 
-    on_draw.center_x += on_draw.speed_x
-    on_draw.center_y += on_draw.speed_y
+    def on_draw(self):
+        arcade.start_render()
+        if self.center_x < 5 or self.center_x > 795:
+            self.speed_x = -self.speed_x
+        if self.center_y < 5 or self.center_y > 695:
+            self.speed_y = -self.speed_y
+
+        arcade.draw_circle_filled(
+            self.center_x, self.center_y, 10, arcade.color.WHEAT
+        )
+
+        self.center_x += self.speed_x
+        self.center_y += self.speed_y
 
 
 if __name__ == "__main__":
-    arcade.open_window(800, 700, "Test")
-    arcade.set_background_color(arcade.color.BLACK_LEATHER_JACKET)
+
+    arcade_test = ArcadeTest(800, 700, "Test")
 
     # Set a center for the circle
-    on_draw.center_x, on_draw.center_y = 300, 250
+    arcade_test.center_x, arcade_test.center_y = 300, 250
 
     # Set a speed
-    on_draw.speed_x, on_draw.speed_y = 10, 9
+    arcade_test.speed_x, arcade_test.speed_y = 10, 9
 
-    arcade.schedule(on_draw, 1 / 30)
+    # arcade.schedule(on_draw, 1 / 30)
     arcade.run()
