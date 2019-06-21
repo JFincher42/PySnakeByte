@@ -15,13 +15,13 @@ import random
 import arcade
 
 # CONSTANTS
-SNAKEBODYCOLOR = (20, 240, 20)  # What color to draw the snake
-SNAKEHEADCOLOR = (240, 255, 20)  # Color of the snake's head
-BORDERCOLOR = (20, 240, 240)  # Color of the screen border
-APPLECOLOR = (240, 20, 20)  # What color to draw the apple
-BGCOLOR = (0, 0, 0)  # What color is the background
+SNAKEBODYCOLOR = arcade.color.APPLE_GREEN  # What color to draw the snake
+SNAKEHEADCOLOR = arcade.color.CANARY_YELLOW  # Color of the snake's head
+BORDERCOLOR = arcade.color.ALMOND  # Color of the screen border
+APPLECOLOR = arcade.color.CANDY_APPLE_RED  # What color to draw the apple
+BGCOLOR = arcade.color.SMOKY_BLACK  # What color is the background
 
-SIZE = 12  # How big is each block?
+SIZE = 40  # How big is each block?
 APPLEPOINTS = 10  # How many points per appls?
 
 SCREENX = 50  # How wide is the screen
@@ -38,6 +38,7 @@ DOWN = 2
 LEFT = 3
 RIGHT = 4
 
+# WHich direction is next if you turn?
 CLOCKWISE = {UP: RIGHT, RIGHT: DOWN, DOWN: LEFT, LEFT: UP}
 COUNTERCLOCKWISE = {UP: LEFT, LEFT: DOWN, DOWN: RIGHT, RIGHT: UP}
 
@@ -80,7 +81,7 @@ class Snake_Game(arcade.Window):
             (25, 11),
             (25, 10),
         ]
-        self.snake_direction = DOWN  # Current snake direction
+        self.snake_direction = UP  # Current snake direction
         self.snake_speed = 0.500  # Current snake speed
         self.frame_time = 0.0  # How much time
         self.score = 0  # Current game score
@@ -136,9 +137,9 @@ class Snake_Game(arcade.Window):
 
         # Define the inner border rectangle to enclose the game play area
         inner_bottom_left = (SIZE, SIZE)
-        inner_bottom_right = ((SCREENX - 2) * SIZE, SIZE)
-        inner_top_right = ((SCREENX - 2) * SIZE, (SCREENY - 2) * SIZE)
-        inner_top_left = (SIZE, (SCREENY - 2) * SIZE)
+        inner_bottom_right = ((SCREENX - 1) * SIZE, SIZE)
+        inner_top_right = ((SCREENX - 1) * SIZE, (SCREENY - 1) * SIZE)
+        inner_top_left = (SIZE, (SCREENY - 1) * SIZE)
         inner = [
             inner_bottom_left,
             inner_bottom_right,
@@ -244,7 +245,7 @@ class Snake_Game(arcade.Window):
             print("Ouroboros not permitted!")
 
         # Did we run out of room?
-        if (
+        elif (
             snake_head[0] <= 0
             or snake_head[0] >= SCREENX
             or snake_head[1] <= 0
@@ -256,7 +257,12 @@ class Snake_Game(arcade.Window):
     def on_update(self, delta_time):
         """Update everything on the screen
         """
-        # First, should we move at all?
+
+        # Are we done?
+        if not self.running:
+            arcade.close_window()
+
+        # Should we move at all?
         # Check if we're paused - do nothing if so
         if not self.paused:
 
