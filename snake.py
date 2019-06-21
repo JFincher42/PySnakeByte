@@ -2,7 +2,7 @@
 
 A Python3 implementation of Snake Byte
 
-Uses pygame to allow the user to control a snake
+Uses arcade to allow the user to control a snake
 The snake moves at a set pace
 Apples appear on the screen at random locations
 The snake eats an apple, and gets longer
@@ -12,7 +12,7 @@ If the snake hits a wall, or it's own body, the game is over
 
 # IMPORTS
 import random
-import pygame
+import arcade
 
 # CONSTANTS
 SNAKEBODYCOLOR = (20, 240, 20)  # What color to draw the snake
@@ -23,8 +23,10 @@ BGCOLOR = (0, 0, 0)  # What color is the background
 
 SIZE = 12  # How big is each block?
 APPLEPOINTS = 10  # How many points per appls?
+
 SCREENX = 50  # How wide is the screen
 SCREENY = 40  # How tall is the screen
+TITLE = "PySnake"  # What is the window title
 
 INITAPPLES = 3  # How many apples to start with
 APPLETIMER = 10  # How long before a new set of apples show up
@@ -36,311 +38,304 @@ DOWN = 2
 LEFT = 3
 RIGHT = 4
 
-# Game Variables
-snakeList = []  # Where is the snake located
-appleList = []  # Where are all the apples
-snakeDirection = DOWN  # Initial snake direction
-score = 0  # What's the current score?
+CLOCKWISE = {UP: RIGHT, RIGHT: DOWN, DOWN: LEFT, LEFT: UP}
+COUNTERCLOCKWISE = {UP: LEFT, LEFT: DOWN, DOWN: RIGHT, RIGHT: UP}
 
-# Init PyGame
-# pygame.init()
-
-# FUNCTIONS
+# The Snake_Game class
 
 
-def getRandomPoint(x, y):
-    """Returns a random points between 2 and the given x,y coords"""
-    return (random.randint(2, x), random.randint(2, y))
+class Snake_Game(arcade.Window):
+    """Snake_Game class
 
+    Contains all the logic to run a snake game
 
-def getNextPoint(point, direction):
-    """Accepts a point and a direction.
-    Returns the next point in that direction
     """
-    if direction == UP:
-        return (point[0], point[1] - 1)
-    elif direction == DOWN:
-        return (point[0], point[1] + 1)
-    elif direction == LEFT:
-        return (point[0] - 1, point[1])
-    else:
-        return (point[0] + 1, point[1])
 
+    def __init__(self, width, height, title, background_color):
+        super().__init__(width, height, title)
+        arcade.set_background_color(background_color)
 
-def initApples(numApples):
-    """Returns a list containing numApples random points"""
-    appleList = []
-    while numApples > 0:
-        appleList.append(getRandomPoint(SCREENX - 1, SCREENY - 1))
-        numApples -= 1
-    return appleList
+    def setup(self):
+        """Setup the game for initial playback.
+        """
+        # Game Variables
+        self.expand_snake = 0  # How many segments to add to the snake
+        self.running = True  # Are we still playing? False if we need to exit
+        self.paused = False  # Are we paused?
 
+        # Setup the initial list of apples
+        self.apple_list = [
+            self.get_random_point(SCREENX - 1, SCREENY - 1)
+            for i in range(INITAPPLES)
+        ]
 
-def drawApples():
-    """Draws the apples from appleList on the display surface"""
-    global window
-    for apple in appleList:
-        # Our coordinates are one-based, but pygame is zero-based
-        # We also want a border around every block
-        # So we subtract one from the coordinate to zero-base it
-        # Multiply by size to get the real coordinates
-        # Then add one to that so we have our one pixel border
-        # The size is then two less (one pixel on both sides)
-        appleRect = pygame.Rect(
-            ((apple[0] - 1) * SIZE + 1),
-            ((apple[1] - 1) * SIZE + 1),
-            SIZE - 2,
-            SIZE - 2,
+        # Setup the initial snake position and direction
+        self.snake_list = [
+            (28, 14),
+            (27, 14),
+            (26, 14),
+            (25, 14),
+            (25, 13),
+            (25, 12),
+            (25, 11),
+            (25, 10),
+        ]
+        self.snake_direction = DOWN  # Current snake direction
+        self.snake_speed = 0.500  # Current snake speed
+        self.frame_time = 0.0  # How much time
+        self.score = 0  # Current game score
+
+        self.shape_list = arcade.ShapeElementList()  # What gets drawn
+
+    def get_random_point(self, x, y):
+        """Returns a random points between 2 and the given x,y coords"""
+        return (random.randint(2, x), random.randint(2, y))
+
+    def get_next_point(self, point):
+        """Accepts a point and a direction.
+        Returns the next point in that direction
+        """
+        if self.snake_direction == UP:
+            return (point[0], point[1] + 1)
+        elif self.snake_direction == DOWN:
+            return (point[0], point[1] - 1)
+        elif self.snake_direction == LEFT:
+            return (point[0] - 1, point[1])
+        else:
+            return (point[0] + 1, point[1])
+
+    def add_shape_to_shape_list(self, point, color):
+        """Calculates the proper sized shape to add to the shape_list"""
+
+        # First, find the center of the shape to draw
+        center_x = (2 * point[0] - 1) * SIZE // 2
+        center_y = (2 * point[1] - 1) * SIZE // 2
+
+        # Now add the shape to draw to the list
+        # SIZE - 2 means there will be a small border around each cell
+        self.shape_list.append(
+            arcade.create_rectangle_filled(
+                center_x, center_y, SIZE - 2, SIZE - 2, color
+            )
         )
-        pygame.draw.ellipse(window, APPLECOLOR, appleRect)
 
+    def draw_screen(self):
+        """Draw the current screen"""
 
-def drawSnake():
-    """ Draws the snake on the display.
-    The complete snake body lives in snakeList.
-    The first element is the head, and is drawn in SNAKEHEADCOLOR
-    The next elements are the body, and are drawn in SNAKEBODYCOLOR
-    The last SNAKEFADE segments are the tail.
-    We calculate a fade and draw each segment in a new color
-    """
+        # Define the outer border rectangle to enclose the screen
+        outer_bottom_left = (0, 0)
+        outer_bottom_right = (SCREENX * SIZE, 0)
+        outer_top_right = (SCREENX * SIZE, SCREENY * SIZE)
+        outer_top_left = (0, SCREENY * SIZE)
+        outer = [
+            outer_bottom_left,
+            outer_bottom_right,
+            outer_top_right,
+            outer_top_left,
+        ]
 
-    global window
-    # First, draw the snake's head
-    snakeHead = snakeList[0]
-    snakeRect = pygame.Rect(
-        ((snakeHead[0] - 1) * SIZE + 1),
-        ((snakeHead[1] - 1) * SIZE + 1),
-        SIZE - 2,
-        SIZE - 2,
-    )
-    pygame.draw.ellipse(window, SNAKEHEADCOLOR, snakeRect)
+        # Define the inner border rectangle to enclose the game play area
+        inner_bottom_left = (SIZE, SIZE)
+        inner_bottom_right = ((SCREENX - 2) * SIZE, SIZE)
+        inner_top_right = ((SCREENX - 2) * SIZE, (SCREENY - 2) * SIZE)
+        inner_top_left = (SIZE, (SCREENY - 2) * SIZE)
+        inner = [
+            inner_bottom_left,
+            inner_bottom_right,
+            inner_top_right,
+            inner_top_left,
+        ]
 
-    # Now, draw the body of the snake
-    for snake in snakeList[1:SNAKEFADE]:
-        snakeRect = pygame.Rect(
-            ((snake[0] - 1) * SIZE + 1),
-            ((snake[1] - 1) * SIZE + 1),
-            SIZE - 2,
-            SIZE - 2,
+        # Define the colors for each
+        outer_colors = [BORDERCOLOR] * 4
+        inner_colors = [BGCOLOR] * 4
+
+        # Now add each shape to the shape_list
+        self.shape_list.append(
+            arcade.create_rectangles_filled_with_colors(outer, outer_colors)
         )
-        pygame.draw.rect(window, SNAKEBODYCOLOR, snakeRect)
-
-    # Now fade out the last few segments
-    colorFade = -180 // SNAKEFADE
-    greenFade = SNAKEBODYCOLOR[1] - colorFade
-    for snake in snakeList[SNAKEFADE:]:
-        SNAKEFADECOLOR = (SNAKEBODYCOLOR[0], greenFade, SNAKEBODYCOLOR[2])
-        snakeRect = pygame.Rect(
-            ((snake[0] - 1) * SIZE + 1),
-            ((snake[1] - 1) * SIZE + 1),
-            SIZE - 2,
-            SIZE - 2,
+        self.shape_list.append(
+            arcade.create_rectangles_filled_with_colors(inner, inner_colors)
         )
-        pygame.draw.rect(window, SNAKEFADECOLOR, snakeRect)
-        greenFade -= colorFade
+
+    def draw_apples(self):
+        """Draws the apples from apple_list on the display surface"""
+
+        for apple in self.apple_list:
+            self.add_shape_to_shape_list(apple, APPLECOLOR)
+
+    def draw_snake(self):
+        """ Draws the snake on the display.
+        The complete snake body lives in snake_list.
+        The first element is the head, and is drawn in SNAKEHEADCOLOR
+        The next elements are the body, and are drawn in SNAKEBODYCOLOR
+        The last SNAKEFADE segments are the tail.
+        We calculate a fade and draw each segment in a new color
+        """
+
+        # First, draw the snake's head
+        self.add_shape_to_shape_list(self.snake_list[0], SNAKEHEADCOLOR)
+
+        # Now, draw the body of the snake
+        for snake in self.snake_list[1:SNAKEFADE]:
+            self.add_shape_to_shape_list(snake, SNAKEBODYCOLOR)
+
+        # Now fade out the last few segments
+        colorFade = -180 // SNAKEFADE
+        greenFade = SNAKEBODYCOLOR[1] - colorFade
+        for snake in self.snake_list[SNAKEFADE:]:
+            SNAKEFADECOLOR = (SNAKEBODYCOLOR[0], greenFade, SNAKEBODYCOLOR[2])
+            self.add_shape_to_shape_list(snake, SNAKEFADECOLOR)
+            greenFade -= colorFade
+
+    def add_snake_segment(self):
+        """Add a new segment by adding a new head
+        Remove the tail if we're just moving
+        If we're expanding, we leave the tail in place
+        """
+
+        self.snake_list.insert(0, self.get_next_point(self.snake_list[0]))
+        if self.expand_snake == 0:
+            del self.snake_list[-1]
+        else:
+            self.expand_snake -= 1
+
+    # Check if the snake hit something
+    def check_snake_hit(self):
+        """ Did we hit something?
+        If the head is in the same place as another object, then...
+
+        If it's an apple:
+            Remove the apple
+            Give them the points
+            Add a new apple to the board
+
+        If it's the border:
+            Game over
+
+        If it's the body of the snake:
+            Game over
+        """
+        # global snakeList, points, running, speed, expandSnake
+        snake_head = self.snake_list[0]
+
+        # Did we hit an apple? Good!
+        if snake_head in self.apple_list:
+            # Remove the apple and score some points
+            self.apple_list.remove(snake_head)
+            self.score += APPLEPOINTS
+
+            # Since we're still a continuous game, add a new apple to eat
+            # If it's under something else, get a new position
+            new_apple = self.get_random_point(SCREENX - 1, SCREENY - 1)
+            while new_apple in self.apple_list or new_apple in self.snake_list:
+                new_apple = self.get_random_point(SCREENX - 1, SCREENY - 1)
+            self.apple_list.append(new_apple)
+
+            # Make the snake longer, and speed things up
+            # Do this by taking 5% off the wait time
+            self.expand_snake = 3
+            self.snake_speed *= 0.95
+
+        # Did we hit our own body?
+        # We need to ignore the actual head, so look from the 2nd element on
+        elif snake_head in self.snake_list[1:]:
+            self.running = False
+            print("Ouroboros not permitted!")
+
+        # Did we run out of room?
+        if (
+            snake_head[0] <= 0
+            or snake_head[0] >= SCREENX
+            or snake_head[1] <= 0
+            or snake_head[1] >= SCREENY
+        ):
+            self.running = False
+            print("Off screen!")
+
+    def on_update(self, delta_time):
+        """Update everything on the screen
+        """
+        # First, should we move at all?
+        # Check if we're paused - do nothing if so
+        if not self.paused:
+
+            # Not paused, so check if enough time has passed
+            # If so, reset it and make the moves
+            self.frame_time += delta_time
+            if self.frame_time >= self.snake_speed:
+                self.frame_time = 0.0
+
+                # Move the snake
+                self.add_snake_segment()
+
+                # Check if the snake hit something
+                self.check_snake_hit()
+
+        # No matter what, clear the shape_list so we can use it again
+        for shape in self.shape_list:
+            self.shape_list.remove(shape)
+
+    def on_draw(self):
+        """Draw everything on the screen
+        """
+
+        # Required to render everything
+        arcade.start_render()
+
+        # Draw everything from back to front
+        self.draw_screen()
+        self.draw_apples()
+        self.draw_snake()
+
+        # Now draw all the shapes
+        self.shape_list.draw()
+
+    def on_key_press(self, key, modifiers):
+        """Handle movement via keypresses
+        """
+
+        # Set the initial direction as unchanged
+        newDirection = self.snake_direction
+
+        # Our cardinal directions use I, J, K, and L
+        # We also restrict you from moving straight backwards
+        if key == arcade.key.L:
+            if self.snake_direction == UP or self.snake_direction == DOWN:
+                newDirection = RIGHT
+        elif key == arcade.key.J:
+            if self.snake_direction == UP or self.snake_direction == DOWN:
+                newDirection = LEFT
+        elif key == arcade.key.I:
+            if self.snake_direction == RIGHT or self.snake_direction == LEFT:
+                newDirection = UP
+        elif key == arcade.key.K:
+            if self.snake_direction == RIGHT or self.snake_direction == LEFT:
+                newDirection = DOWN
+
+        # You can also move relative to the direction, left or right
+        # Using the arrows or the period and comma
+        elif key == arcade.key.RIGHT or key == arcade.key.PERIOD:
+            newDirection = CLOCKWISE[self.snake_direction]
+        elif key == arcade.key.LEFT or key == arcade.key.COMMA:
+            newDirection = COUNTERCLOCKWISE[self.snake_direction]
+
+        # If the user presses Q or ESC, quit the game
+        elif key == arcade.key.Q:
+            self.running = False
+
+        # If the user presses P, pause the game
+        elif key == arcade.key.P:
+            self.paused = not self.paused
+
+        self.snake_direction = newDirection
 
 
-def clockwise(direction):
-    """What's the next clockwise direction?"""
-    if direction == UP:
-        return RIGHT
-    if direction == RIGHT:
-        return DOWN
-    if direction == DOWN:
-        return LEFT
-    if direction == LEFT:
-        return UP
+if __name__ == "__main__":
 
+    snake_game = Snake_Game(SCREENX * SIZE, SCREENY * SIZE, TITLE, BGCOLOR)
+    snake_game.setup()
 
-def counterclockwise(direction):
-    """What's the next counter-clockwise direction?"""
-    if direction == UP:
-        return LEFT
-    if direction == RIGHT:
-        return UP
-    if direction == DOWN:
-        return RIGHT
-    if direction == LEFT:
-        return DOWN
-
-
-def processInput(key, direction):
-    """ Handle keyboard input"""
-    global running
-    global paused
-
-    # Set the initial direction as unchanged
-    newDirection = direction
-    # Our cardinal directions use I, J, K, and L
-    # We also restrict you from moving straight backwards
-    if key == pygame.K_l:  # pylint: disable=E1101
-        if direction == UP or direction == DOWN:
-            newDirection = RIGHT
-    elif key == pygame.K_j:  # pylint: disable=E1101
-        if direction == UP or direction == DOWN:
-            newDirection = LEFT
-    elif key == pygame.K_i:  # pylint: disable=E1101
-        if direction == RIGHT or direction == LEFT:
-            newDirection = UP
-    elif key == pygame.K_k:  # pylint: disable=E1101
-        if direction == RIGHT or direction == LEFT:
-            newDirection = DOWN
-
-    # You can also move relative to the direction, left or right
-    # Using the arrows or the period and comma
-    elif (
-        key == pygame.K_RIGHT or key == pygame.K_PERIOD
-    ):  # pylint: disable=E1101
-        newDirection = clockwise(direction)
-    elif (
-        key == pygame.K_LEFT or key == pygame.K_COMMA
-    ):  # pylint: disable=E1101
-        newDirection = counterclockwise(direction)
-
-    # If the user presses Q, quit the game
-    elif key == pygame.K_q:  # pylint: disable=E1101
-        running = False
-
-    # If the user presses P, pause the game
-    elif key == pygame.K_p:  # pylint: disable=E1101
-        paused = not paused  # pylint: disable=E0601
-
-    return newDirection
-
-
-def addSnakeSegment(direction, expandSnake):
-    """Add a new segment by adding a new head
-    Remove the tail if we're just moving
-    If we're expanding, we leave the tail in place
-    """
-    global snakeList
-
-    snakeList.insert(0, getNextPoint(snakeList[0], direction))
-    if not expandSnake:
-        del snakeList[-1]
-
-
-# Check if the snake hit something
-# If it hit an apple, remove the apple and increase the score
-# If it hit itself or ran off the screen, quit the game
-def checkSnakeHit():
-    """ Did we hit something?
-    If the head is in the same place as another object, then...
-
-    If it's an apple:
-        Remove the apple
-        Give them the points
-        Add a new apple to the board
-
-    If it's the border:
-        Game over
-
-    If it's the body of the snake (not the head, which will always be True):
-        Game over
-    """
-    global snakeList, points, running, speed, expandSnake
-    snakeHead = snakeList[0]
-
-    # First check for an apple hit
-    if snakeHead in appleList:
-        appleList.remove(snakeHead)
-        points += APPLEPOINTS  # pylint: disable=E0602
-
-        # Add a new apple to the screen, and make it visible
-        # Make sure it's not under another item
-        newApple = getRandomPoint(SCREENX - 1, SCREENY - 1)
-        while (newApple in appleList) or (newApple in snakeList):
-            newApple = getRandomPoint(SCREENX - 1, SCREENY - 1)
-        appleList.append(newApple)
-
-        # Make the snake longer, and speed things up
-        expandSnake = 3
-        speed = 5 + points // 50
-
-    # Now check if we hit our own body
-    # We need to ignore the actual head, so look from the 2nd element on
-    if snakeHead in snakeList[1:]:
-        running = False
-        print("Ouroboros not permitted!")
-
-    # Now check for a wall hit
-    if (
-        snakeHead[0] <= 0
-        or snakeHead[0] >= SCREENX
-        or snakeHead[1] <= 0
-        or snakeHead[1] >= SCREENY
-    ):
-        running = False
-        print("Off screen!")
-
-
-def drawScreen():
-    """Draw the current screen"""
-    global window
-
-    # Draw a border rectangle to enclose the screen
-    outerBorder = pygame.Rect(0, 0, SCREENX * SIZE, SCREENY * SIZE)
-    innerBorder = pygame.Rect(
-        SIZE, SIZE, (SCREENX - 2) * SIZE, (SCREENY - 2) * SIZE
-    )
-
-    pygame.draw.rect(window, BORDERCOLOR, outerBorder)
-    pygame.draw.rect(window, BGCOLOR, innerBorder)
-
-    # Draw the apples and the current form of the snake
-    drawApples()
-    drawSnake()
-
-
-# Main Flow
-# Setup PyGame board
-pygame.init()  # pylint: disable=E1101
-window = pygame.display.set_mode(((SCREENX * SIZE), (SCREENY * SIZE)))
-pygame.display.set_caption("Snake Byte!")
-
-window.fill(BGCOLOR)
-
-# Init basic game parameters
-appleList += initApples(INITAPPLES)
-snakeList = [
-    (28, 14),
-    (27, 14),
-    (26, 14),
-    (25, 14),
-    (25, 13),
-    (25, 12),
-    (25, 11),
-    (25, 10),
-]
-snakeDirection = RIGHT
-points = 0
-speed = 5
-
-running = True
-paused = False
-expandSnake = 0
-clock = pygame.time.Clock()
-
-while running:
-
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:  # pylint: disable=E1101
-            running = False
-        elif event.type == pygame.KEYDOWN:  # pylint: disable=E1101
-            snakeDirection = processInput(event.key, snakeDirection)
-
-    if not paused:
-        # Add a new segment to the snake
-        addSnakeSegment(snakeDirection, expandSnake > 0)
-        if expandSnake > 0:
-            expandSnake -= 1
-
-        # Check if the snake hit something
-        checkSnakeHit()
-
-    # Refresh the screen
-    drawScreen()
-    pygame.display.flip()
-    clock.tick(speed)
-
-print("Points: {}".format(points))
+    # Start the render cycle
+    arcade.run()
+    print(f"Points: {snake_game.score}")
